@@ -7,10 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract SwapData is AccessControl {
-
     using Counters for Counters.Counter;
 
-struct SwapListing {
+    struct SwapListing {
         uint256 listingId;
         IERC721 TokenAddress;
         uint256 tokenId;
@@ -41,7 +40,6 @@ struct SwapListing {
         uint256 offerId;
     }
 
-
     bytes32 public constant DATA_READER = keccak256("READ_DATA");
     bytes32 public constant DATA_WRITER = keccak256("WRITE_DATA");
     bytes32 public constant DATA_MIGRATOR = keccak256("DATA_MIGRATOR");
@@ -54,7 +52,11 @@ struct SwapListing {
     mapping(uint256 => SwapOffer) private _offers;
     mapping(uint256 => Trade) private _trades;
 
-    constructor(address admin, address reader, address writer){
+    constructor(
+        address admin,
+        address reader,
+        address writer
+    ) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin); // Admin Wallet address
         _grantRole(DATA_READER, reader); // Swap contract
         _grantRole(DATA_WRITER, writer); // Swap COntract
@@ -64,7 +66,10 @@ struct SwapListing {
     }
 
     // CRUD Listing
-    function addListing(SwapListing memory listing) external onlyRole(DATA_WRITER) {
+    function addListing(SwapListing memory listing)
+        external
+        onlyRole(DATA_WRITER)
+    {
         listing.listingId = _listingIdTracker.current();
         _listings[_listingIdTracker.current()] = listing;
         _listingIdTracker.increment();
@@ -74,14 +79,21 @@ struct SwapListing {
         _listings[id].isCancelled = true;
     }
 
-    function updateListing(SwapListing memory listing) external onlyRole(DATA_WRITER){
+    function updateListing(SwapListing memory listing)
+        external
+        onlyRole(DATA_WRITER)
+    {
         _listings[listing.listingId] = listing;
     }
 
-    function readListingById(uint256 id)external view onlyRole(DATA_READER) returns(SwapListing memory) {
+    function readListingById(uint256 id)
+        external
+        view
+        onlyRole(DATA_READER)
+        returns (SwapListing memory)
+    {
         return _listings[id];
     }
- 
 
     // CRUD Offer
     function addOffer(SwapOffer memory offer) external onlyRole(DATA_WRITER) {
@@ -94,11 +106,19 @@ struct SwapListing {
         _offers[id].isCancelled = true;
     }
 
-    function updateOffer(SwapOffer memory offer) external onlyRole(DATA_WRITER){
+    function updateOffer(SwapOffer memory offer)
+        external
+        onlyRole(DATA_WRITER)
+    {
         _offers[offer.offerId] = offer;
     }
 
-    function readOfferById(uint256 id)external view onlyRole(DATA_READER) returns(SwapOffer memory) {
+    function readOfferById(uint256 id)
+        external
+        view
+        onlyRole(DATA_READER)
+        returns (SwapOffer memory)
+    {
         return _offers[id];
     }
 
@@ -108,37 +128,58 @@ struct SwapListing {
         _tradeIdTracker.increment();
     }
 
-    function readTradeById(uint256 id)external view onlyRole(DATA_READER) returns (Trade memory){
+    function readTradeById(uint256 id)
+        external
+        view
+        onlyRole(DATA_READER)
+        returns (Trade memory)
+    {
         return _trades[id];
     }
 
     // Bulk reads
-    function readAllListings()external view onlyRole(DATA_READER) returns (SwapListing[] memory){
-        SwapListing[] memory listings = new SwapListing[](_listingIdTracker.current());
-        for (uint256 i = 0; i < _listingIdTracker.current(); i++){
+    function readAllListings()
+        external
+        view
+        onlyRole(DATA_READER)
+        returns (SwapListing[] memory)
+    {
+        SwapListing[] memory listings = new SwapListing[](
+            _listingIdTracker.current()
+        );
+        for (uint256 i = 0; i < _listingIdTracker.current(); i++) {
             listings[i] = _listings[i];
         }
         return listings;
     }
 
-    function readAllOffers() external view onlyRole(DATA_READER) returns (SwapOffer[] memory){
-        SwapOffer[] memory swapOffers = new SwapOffer[](_offerIdTracker.current());
-        for(uint256 i = 0; i < _offerIdTracker.current(); i++){
+    function readAllOffers()
+        external
+        view
+        onlyRole(DATA_READER)
+        returns (SwapOffer[] memory)
+    {
+        SwapOffer[] memory swapOffers = new SwapOffer[](
+            _offerIdTracker.current()
+        );
+        for (uint256 i = 0; i < _offerIdTracker.current(); i++) {
             swapOffers[i] = _offers[i];
         }
         return swapOffers;
     }
 
-    function readAllTrades() external view onlyRole(DATA_READER) returns (Trade[] memory){
+    function readAllTrades()
+        external
+        view
+        onlyRole(DATA_READER)
+        returns (Trade[] memory)
+    {
         Trade[] memory trades = new Trade[](_tradeIdTracker.current());
-        for(uint256 i = 0 ; i < _tradeIdTracker.current();i++){
+        for (uint256 i = 0; i < _tradeIdTracker.current(); i++) {
             trades[i] = _trades[i];
         }
         return trades;
     }
- 
 
     IERC20 public transactionToken;
-
-    
 }
