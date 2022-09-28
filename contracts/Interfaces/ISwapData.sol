@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 interface ISwapData {
     struct SwapListing {
         uint256 listingId;
-        IERC721 TokenAddress;
+        IERC721 tokenAddress;
         uint256 tokenId;
         address tokenOwner;
         uint256 transactionChargeBips;
@@ -35,7 +35,15 @@ interface ISwapData {
         uint256 offerId;
     }
 
-    function addListing(SwapListing memory listing) external;
+    event SwapListingAdded(SwapListing listing);
+    event SwapListingUpdated(SwapListing listing);
+    event SwapListingRemoved(uint256 listingId);
+    event SwapOfferAdded(SwapOffer offer);
+    event SwapOfferUpdated(SwapOffer offer);
+    event SwapOfferRemoved(uint256 id);
+    event TradeAdded(Trade trade);
+
+    function addListing(SwapListing memory listing) external returns (bool);
 
     function removeListingById(uint256 id) external;
 

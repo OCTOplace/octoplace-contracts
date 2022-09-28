@@ -11,7 +11,7 @@ contract SwapData is AccessControl {
 
     struct SwapListing {
         uint256 listingId;
-        IERC721 TokenAddress;
+        IERC721 tokenAddress;
         uint256 tokenId;
         address tokenOwner;
         uint256 transactionChargeBips;
@@ -52,6 +52,13 @@ contract SwapData is AccessControl {
     mapping(uint256 => SwapOffer) private _offers;
     mapping(uint256 => Trade) private _trades;
 
+    event SwapListingAdded(SwapListing listing);
+    event SwapListingUpdated(SwapListing listing);
+    event SwapListingRemoved(uint256 listingId);
+    event SwapOfferAdded(SwapOffer offer);
+    event SwapOfferUpdated(SwapOffer offer);
+    event SwapOfferRemoved(uint256 id);
+    event TradeAdded(Trade trade);
     constructor(
         address admin,
         address reader,
@@ -69,21 +76,29 @@ contract SwapData is AccessControl {
     function addListing(SwapListing memory listing)
         external
         onlyRole(DATA_WRITER)
+        returns (bool)
     {
         listing.listingId = _listingIdTracker.current();
         _listings[_listingIdTracker.current()] = listing;
         _listingIdTracker.increment();
+        emit SwapListingAdded(listing);
+        return true;
     }
 
-    function removeListingById(uint256 id) external onlyRole(DATA_WRITER) {
+    function removeListingById(uint256 id) external onlyRole(DATA_WRITER) returns (bool){
         _listings[id].isCancelled = true;
+        emit SwapListingRemoved(id);
+        return true;
     }
 
     function updateListing(SwapListing memory listing)
         external
         onlyRole(DATA_WRITER)
+        returns(bool)
     {
         _listings[listing.listingId] = listing;
+        emit SwapListingUpdated(listing);
+        return true;
     }
 
     function readListingById(uint256 id)
@@ -96,21 +111,28 @@ contract SwapData is AccessControl {
     }
 
     // CRUD Offer
-    function addOffer(SwapOffer memory offer) external onlyRole(DATA_WRITER) {
+    function addOffer(SwapOffer memory offer) external onlyRole(DATA_WRITER) returns (bool) {
         offer.offerId = _offerIdTracker.current();
         _offers[_offerIdTracker.current()] = offer;
         _offerIdTracker.increment();
+        emit SwapOfferAdded(offer);
+        return true;
     }
 
-    function removeOfferById(uint256 id) external onlyRole(DATA_WRITER) {
+    function removeOfferById(uint256 id) external onlyRole(DATA_WRITER) returns (bool) {
         _offers[id].isCancelled = true;
+        emit SwapOfferRemoved(id);
+        return true;
     }
 
     function updateOffer(SwapOffer memory offer)
         external
         onlyRole(DATA_WRITER)
+        returns (bool)
     {
         _offers[offer.offerId] = offer;
+        emit SwapOfferUpdated(offer);
+        return true;
     }
 
     function readOfferById(uint256 id)
@@ -122,10 +144,12 @@ contract SwapData is AccessControl {
         return _offers[id];
     }
 
-    function addTrade(Trade memory trade) external onlyRole(DATA_WRITER) {
+    function addTrade(Trade memory trade) external onlyRole(DATA_WRITER) returns (bool){
         trade.tradeId = _tradeIdTracker.current();
         _trades[_tradeIdTracker.current()] = trade;
         _tradeIdTracker.increment();
+        emit TradeAdded(trade);
+        return true;
     }
 
     function readTradeById(uint256 id)
@@ -145,10 +169,10 @@ contract SwapData is AccessControl {
         returns (SwapListing[] memory)
     {
         SwapListing[] memory listings = new SwapListing[](
-            _listingIdTracker.current()
+            _listingIdTracker.current()-1
         );
-        for (uint256 i = 0; i < _listingIdTracker.current(); i++) {
-            listings[i] = _listings[i];
+        for (uint256 i = 0; i < listings.length; i++) {
+            listings[i] = _listings[i+1];
         }
         return listings;
     }
@@ -160,10 +184,10 @@ contract SwapData is AccessControl {
         returns (SwapOffer[] memory)
     {
         SwapOffer[] memory swapOffers = new SwapOffer[](
-            _offerIdTracker.current()
+            _offerIdTracker.current()-1
         );
-        for (uint256 i = 0; i < _offerIdTracker.current(); i++) {
-            swapOffers[i] = _offers[i];
+        for (uint256 i = 0; i < swapOffers.length; i++) {
+            swapOffers[i] = _offers[i+1];
         }
         return swapOffers;
     }
@@ -174,12 +198,19 @@ contract SwapData is AccessControl {
         onlyRole(DATA_READER)
         returns (Trade[] memory)
     {
-        Trade[] memory trades = new Trade[](_tradeIdTracker.current());
-        for (uint256 i = 0; i < _tradeIdTracker.current(); i++) {
-            trades[i] = _trades[i];
+        Trade[] memory trades = new Trade[](_tradeIdTracker.current()-1);
+        for (uint256 i = 0; i < trades.length; i++) {
+            trades[i] = _trades[i+1];
         }
         return trades;
     }
 
+    function grantReaderRole(address to) external {
+        grantRole(DATA_READER, to);
+    }
+
+    function grantWriterRole(address to) external {
+        grantRole(DATA_WRITER, to);
+    }
     IERC20 public transactionToken;
 }
