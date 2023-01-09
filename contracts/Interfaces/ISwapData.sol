@@ -17,6 +17,7 @@ interface ISwapData {
 
     struct SwapOffer {
         uint256 offerId;
+        uint256 listingId;
         IERC721 offerTokenAddress;
         uint256 offerTokenId;
         address offerTokenOwner;
@@ -26,6 +27,7 @@ interface ISwapData {
         uint256 transactionChargeBips;
         bool isCompleted;
         bool isCancelled;
+        bool isDeclined;
         uint256 transactionCharge;
     }
 
@@ -54,7 +56,7 @@ interface ISwapData {
         view
         returns (SwapListing memory);
 
-    function addOffer(SwapOffer memory offer) external;
+    function addOffer(SwapOffer memory offer) external returns (bool);
 
     function removeOfferById(uint256 id) external;
 

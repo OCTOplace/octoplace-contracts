@@ -22,6 +22,7 @@ contract SwapData is AccessControl {
 
     struct SwapOffer {
         uint256 offerId;
+        uint256 listingId;
         IERC721 offerTokenAddress;
         uint256 offerTokenId;
         address offerTokenOwner;
@@ -31,6 +32,7 @@ contract SwapData is AccessControl {
         uint256 transactionChargeBips;
         bool isCompleted;
         bool isCancelled;
+        bool isDeclined;
         uint256 transactionCharge;
     }
 
@@ -40,7 +42,6 @@ contract SwapData is AccessControl {
         uint256 offerId;
     }
 
-    bytes32 public constant DATA_READER = keccak256("READ_DATA");
     bytes32 public constant DATA_WRITER = keccak256("WRITE_DATA");
     bytes32 public constant DATA_MIGRATOR = keccak256("DATA_MIGRATOR");
 
@@ -59,13 +60,12 @@ contract SwapData is AccessControl {
     event SwapOfferUpdated(SwapOffer offer);
     event SwapOfferRemoved(uint256 id);
     event TradeAdded(Trade trade);
+
     constructor(
         address admin,
-        address reader,
         address writer
     ) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin); // Admin Wallet address
-        _grantRole(DATA_READER, reader); // Swap contract
         _grantRole(DATA_WRITER, writer); // Swap COntract
         _listingIdTracker.increment();
         _offerIdTracker.increment();
@@ -85,7 +85,11 @@ contract SwapData is AccessControl {
         return true;
     }
 
-    function removeListingById(uint256 id) external onlyRole(DATA_WRITER) returns (bool){
+    function removeListingById(uint256 id)
+        external
+        onlyRole(DATA_WRITER)
+        returns (bool)
+    {
         _listings[id].isCancelled = true;
         emit SwapListingRemoved(id);
         return true;
@@ -94,7 +98,7 @@ contract SwapData is AccessControl {
     function updateListing(SwapListing memory listing)
         external
         onlyRole(DATA_WRITER)
-        returns(bool)
+        returns (bool)
     {
         _listings[listing.listingId] = listing;
         emit SwapListingUpdated(listing);
@@ -104,14 +108,17 @@ contract SwapData is AccessControl {
     function readListingById(uint256 id)
         external
         view
-        onlyRole(DATA_READER)
         returns (SwapListing memory)
     {
         return _listings[id];
     }
 
     // CRUD Offer
-    function addOffer(SwapOffer memory offer) external onlyRole(DATA_WRITER) returns (bool) {
+    function addOffer(SwapOffer memory offer)
+        external
+        onlyRole(DATA_WRITER)
+        returns (bool)
+    {
         offer.offerId = _offerIdTracker.current();
         _offers[_offerIdTracker.current()] = offer;
         _offerIdTracker.increment();
@@ -119,7 +126,11 @@ contract SwapData is AccessControl {
         return true;
     }
 
-    function removeOfferById(uint256 id) external onlyRole(DATA_WRITER) returns (bool) {
+    function removeOfferById(uint256 id)
+        external
+        onlyRole(DATA_WRITER)
+        returns (bool)
+    {
         _offers[id].isCancelled = true;
         emit SwapOfferRemoved(id);
         return true;
@@ -138,13 +149,16 @@ contract SwapData is AccessControl {
     function readOfferById(uint256 id)
         external
         view
-        onlyRole(DATA_READER)
         returns (SwapOffer memory)
     {
         return _offers[id];
     }
 
-    function addTrade(Trade memory trade) external onlyRole(DATA_WRITER) returns (bool){
+    function addTrade(Trade memory trade)
+        external
+        onlyRole(DATA_WRITER)
+        returns (bool)
+    {
         trade.tradeId = _tradeIdTracker.current();
         _trades[_tradeIdTracker.current()] = trade;
         _tradeIdTracker.increment();
@@ -155,7 +169,6 @@ contract SwapData is AccessControl {
     function readTradeById(uint256 id)
         external
         view
-        onlyRole(DATA_READER)
         returns (Trade memory)
     {
         return _trades[id];
@@ -165,14 +178,13 @@ contract SwapData is AccessControl {
     function readAllListings()
         external
         view
-        onlyRole(DATA_READER)
         returns (SwapListing[] memory)
     {
         SwapListing[] memory listings = new SwapListing[](
-            _listingIdTracker.current()-1
+            _listingIdTracker.current() - 1
         );
         for (uint256 i = 0; i < listings.length; i++) {
-            listings[i] = _listings[i+1];
+            listings[i] = _listings[i + 1];
         }
         return listings;
     }
@@ -180,14 +192,13 @@ contract SwapData is AccessControl {
     function readAllOffers()
         external
         view
-        onlyRole(DATA_READER)
         returns (SwapOffer[] memory)
     {
         SwapOffer[] memory swapOffers = new SwapOffer[](
-            _offerIdTracker.current()-1
+            _offerIdTracker.current() - 1
         );
         for (uint256 i = 0; i < swapOffers.length; i++) {
-            swapOffers[i] = _offers[i+1];
+            swapOffers[i] = _offers[i + 1];
         }
         return swapOffers;
     }
@@ -195,22 +206,18 @@ contract SwapData is AccessControl {
     function readAllTrades()
         external
         view
-        onlyRole(DATA_READER)
         returns (Trade[] memory)
     {
-        Trade[] memory trades = new Trade[](_tradeIdTracker.current()-1);
+        Trade[] memory trades = new Trade[](_tradeIdTracker.current() - 1);
         for (uint256 i = 0; i < trades.length; i++) {
-            trades[i] = _trades[i+1];
+            trades[i] = _trades[i + 1];
         }
         return trades;
-    }
-
-    function grantReaderRole(address to) external {
-        grantRole(DATA_READER, to);
     }
 
     function grantWriterRole(address to) external {
         grantRole(DATA_WRITER, to);
     }
+
     IERC20 public transactionToken;
 }
