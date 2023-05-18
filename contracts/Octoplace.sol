@@ -239,9 +239,7 @@ contract OctoplaceMarket is ReentrancyGuard {
         require(idToMarketItem[itemId].nftContract == nftContract, "Not correct NFT address");
         require(idToMarketItem[itemId].tokenId == tokenId, "Not correct tokenId");
         require(idToMarketItem[itemId].seller == msg.sender, "Only seller can update Item");
-
         idToMarketItem[itemId].price = price;
-
         emit MarketItemUpdated(itemId, nftContract, tokenId, msg.sender, address(0), idToMarketItem[itemId].category,
             price, false);
     }
@@ -402,12 +400,23 @@ contract OctoplaceMarket is ReentrancyGuard {
         (uint marketFeeMultiplier, uint creatorFeeMultiplier) = getFeeMultiplier(idToMarketItem[itemId].seller, true);
         //        (uint marketFeeMultiplier, uint creatorFeeMultiplier) = (100,100);
         // Read data from mappings
+
         uint256 creatorPayout = 0;
-        address creator = AddressToCreatorFeeItem[addressNFT].creator;
+        address creator = address(0);
+        
+        // Read data from mappings
+        creator = AddressToCreatorFeeItem[addressNFT].creator;
         if (creator != address(0x0)) {
             // if creator is set
             creatorPayout = (offer / 10000) * AddressToCreatorFeeItem[addressNFT].feeBasisPoints * creatorFeeMultiplier / 100;
             IERC20(WTFuel).transferFrom(bidder, creator, creatorPayout);
+        }else{
+            if(checkRoyalties(addressNFT)){
+                (address creatorAddr, uint256 royalityAmt) = IERC2981(addressNFT).royaltyInfo(tokenId, offer);
+                IERC20(WTFuel).transferFrom(bidder, creatorAddr, royalityAmt);
+                creatorPayout = royalityAmt;
+                creator = creatorAddr;
+            }
         }
 
         // set in marketItem
@@ -462,9 +471,9 @@ contract OctoplaceMarket is ReentrancyGuard {
 
     // set creator fee
     function setCreatorFeeBasisPointsByCreator(uint256 feeBasisPoints, address creatorAddress, address NFTAddress)
-    public onlyAdmin {
+    public {
         require(feeBasisPoints <= 1000, "Sales Fee cant be higher than 10%");
-        require(contractOwners[NFTAddress] == creatorAddress, "Not valid creator");
+        require(contractOwners[NFTAddress] == msg.sender, "Not valid creator");
         AddressToCreatorFeeItem[NFTAddress].feeBasisPoints = feeBasisPoints;
         AddressToCreatorFeeItem[NFTAddress].creator = payable(creatorAddress);
 
