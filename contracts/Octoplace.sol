@@ -536,4 +536,7 @@ contract OctoplaceMarket is ReentrancyGuard {
             return (100, 100);
         }
     }
+    function getLastMarketId() public view returns (uint256){
+        return _itemIds.current()
+    }
 }
